@@ -5,14 +5,12 @@ from .schemable.schemable_python.schemable_python import SchemablePython
 from .schemable.schemable_python.converter import Converter
 from .schemable.typing import Schemable
 
-from .delegate.abstract.http_delegate import DelegateHttpRequest, HttpDelegate, DelegateAsyncHttpRequest
-from .delegate.abstract.redis_delegate import RedisDelegate
+from .delegate.abstract.http_delegate import HttpRequest, HttpDelegate
+from .delegate.abstract.aiohttp_delegate import AioHttpDelegate, AioHttpRequest
 from .delegate.typing import IoDelegate
-from .delegate.core.io_read_sink import IoReadSink
-from .delegate.core.io_source import IoSource, IoSourceRedis
-from .delegate.core.option_http import OptionHttp
-from .delegate.core.option_base import OptionBase
-from .delegate.core.option_redis import OptionRedis
+from .delegate.core.option.option_base import OptionBase
+from .delegate.core.option.option_http import OptionHttp
+from .delegate.core.source.source_base import SourceBase
 
 from .share.entity import Entity
 from .registration import Registration
@@ -28,13 +26,13 @@ v0.0.3
     整合http, 采用PoolHttpClient实现  √
     迁移user_setting  √ 
     迁移picture  √
-v0.0.4+
+v0.0.4
     独立模块  √
-    单元测试
-    exception handling
-    整合fileio
-    整合redis  √
-    async
+    async √
+v0.0.5
+    私有 √
+v0.1.0
+    flow
 长期规划
     http实现
     compiler language agnostic
@@ -58,19 +56,20 @@ def register_dio(logger: Logger):
     
 
 __all__ = [
-    # 'Schema',
+    # schemable暴露
     'Schemable',
     'SchemablePython',
     'compile_schema',  # TODOlx 不暴露
     'Converter',
     'Entity',
     
-    'IoDelegate',
+    # delegate暴露
+    'HttpRequest',
     'HttpDelegate',
-    'RedisDelegate',
-    'DelegateHttpRequest',
-    'DelegateAsyncHttpRequest',
+    'AioHttpDelegate',
+    'AioHttpRequest',
+    'IoDelegate',
+    'OptionBase',
     'OptionHttp',
-    'OptionRedis',
-    'IoSource',
+    'SourceBase',
 ]

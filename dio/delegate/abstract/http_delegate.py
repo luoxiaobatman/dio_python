@@ -1,10 +1,9 @@
 from abc import abstractmethod
 from typing import TypeVar, Optional, Type, Generic, Dict, Union
-from ..core.io_read_sink import IoReadSink
-from ..core.option_http import OptionHttp
 from ..typing import IoDelegate
 from ...mixin.immutable import Immutable
 from ...share.entity import Entity
+from ..core.option.option_http import OptionHttp
 
 
 T = TypeVar('T', bound=IoDelegate)
@@ -24,6 +23,59 @@ class HttpStatusDescriptor(Immutable):
     @property
     def rfc(self):
         tuple.__getitem__(self, 2)
+
+
+class HttpRequest:
+    option: O
+    def url(self, urlParams: Optional[Dict[str, str]] = None):
+        if urlParams:
+            serialized_params = '&'.join(['{}={}'.format(k, v) for k, v in urlParams.items()])
+            return '{}{}?{}'.format(self.option._base_.source.host, self.option._http_.path, serialized_params)
+        return self.option._base_.source.host + self.option._http_.path
+    @property
+    def header(self):
+        return self.option._http_.header
+    
+    @abstractmethod
+    async def get(self, urlParams: Optional[Dict[str, str]]) -> any:
+        raise NotImplementedError
+    
+    @abstractmethod
+    async def post(self, urlParams: Optional[Dict[str, str]], body: Optional[Union[str, dict]]):
+        raise NotImplementedError
+    """
+    TODO put, delete, head, trace etc...
+    """
+    def __init__(self, option: O):
+        self.option = option
+
+
+R = TypeVar('R', bound=HttpRequest)
+
+
+class HttpDelegate(IoDelegate[E, RO, WO], Generic[E, RO, WO]):
+    @abstractmethod
+    def _build_request(self, option: Union[RO, WO]) -> R:
+        raise NotImplementedError
+    
+    @abstractmethod
+    async def _do_read(self, request: R, ro: RO):
+        raise NotImplementedError
+    
+    @abstractmethod
+    async def _do_write(self, request: R, wo: WO):
+        raise NotImplementedError
+    
+    async def _write(self, option: WO = None) -> None:
+        request = self._build_request(option)
+        await self._do_write(request, option)
+        
+    async def _read(self, option: RO = None) -> Entity:
+        request = self._build_request(option)
+        result = await self._do_read(request, option)
+        if isinstance(result, Entity):
+            return result
+        return option._base_.source.content(self.__class__, result, option._base_.schema)
 
 
 class HttpStatus:
@@ -174,115 +226,3 @@ class HttpStatus:
     # NOT_EXTENDED(510, "Not Extended"),
     # # https://tools.ietf.org/html/rfc6585#section-6">Additional HTTP Status Codes</a>
     # NETWORK_AUTHENTICATION_REQUIRED(511, "Network Authentication Required");
-
-
-class DelegateHttpRequest:
-    option: O
-    @property
-    def url(self):
-        return self.option._base_.source.host + self.option._http_.path
-    @property
-    def header(self):
-        return self.option._http_.header
-    
-    @abstractmethod
-    def get(self, urlParams: Optional[Dict[str, str]]) -> any:
-        raise NotImplementedError
-    
-    @abstractmethod
-    def post(self, urlParams: Optional[Dict[str, str]], body: Optional[Union[str, dict]]):
-        raise NotImplementedError
-    
-    def __init__(self, option: O):
-        self.option = option
-
-
-class DelegateAsyncHttpRequest:
-    option: O
-    def url(self, urlParams: Optional[Dict[str, str]] = None):
-        if urlParams:
-            serialized_params = '&'.join(['{}={}'.format(k, v) for k, v in urlParams.items()])
-            return '{}{}?{}'.format(self.option._base_.source.host, self.option._http_.path, serialized_params)
-        return self.option._base_.source.host + self.option._http_.path
-    @property
-    def header(self):
-        return self.option._http_.header
-    
-    @abstractmethod
-    async def get(self, urlParams: Optional[Dict[str, str]]) -> any:
-        raise NotImplementedError
-    
-    @abstractmethod
-    async def post(self, urlParams: Optional[Dict[str, str]], body: Optional[Union[str, dict]]):
-        raise NotImplementedError
-    
-    def __init__(self, option: O):
-        self.option = option
-
-
-R = TypeVar('R', bound=DelegateHttpRequest)
-AR = TypeVar('AR', bound=DelegateHttpRequest)
-
-
-class HttpDelegate(IoDelegate[E, RO, WO], Generic[E, RO, WO]):
-    Entity: Type[E] = None
-    ReadOption: Type[RO] = None
-    WriteOption: Type[WO] = None
-    
-    @abstractmethod
-    def _build_request(self, option: O) -> R:
-        raise NotImplementedError
-    def _build_async_request(self, option: O) -> AR:
-        raise NotImplementedError
-    
-    # @abstractmethod
-    def _do_write(self, request: R, option: WO = None) -> any:
-        raise NotImplementedError
-    # @abstractmethod
-    def _do_read(self, request: R, option: RO = None) -> any:
-        raise NotImplementedError
-    
-    def _pre_read(self, option: RO = None) -> Optional[E]:
-        return None
-    def read(self, option: RO = None) -> Optional[E]:
-        r = self._pre_read(option)
-        if r:
-            return r
-        request = self._build_request(option)
-        result = self._do_read(request, option)
-        if isinstance(result, Entity):
-            # 子类自己实现了 sink.content 类似的功能, 直接返回了
-            return result
-        # 否则, 父类来帮你
-        sink = IoReadSink(self.__class__, option._base_.source, result)
-        # 父类允许子类其他骚操作
-        return self._post_read(sink.content, option)
-    def _post_read(self: T, entity: E, option: RO) -> E:
-        return entity
-
-    def write(self, option: WO = None) -> any:
-        request = self._build_request(option)
-        return self._do_write(request, option)
-    
-    # ---------------------------- async ----------------------------
-    
-    async def async_write(self, option: WO = None) -> any:
-        request = self._build_async_request(option)
-        return await self._do_async_write(request, option)
-    async def _do_async_write(self, request: AR, option: WO = None) -> any:
-        raise NotImplementedError
-    async def async_read(self, option: RO = None) -> Optional[E]:
-        r = self._pre_read(option)
-        if r:
-            return r
-        request = self._build_async_request(option)
-        result = await self._do_async_read(request, option)
-        if isinstance(result, Entity):
-            # 子类自己实现了 sink.content 类似的功能, 直接返回了
-            return result
-        # 否则, 父类来帮你
-        sink = IoReadSink(self.__class__, option._base_.source, result)
-        # 父类允许子类其他骚操作
-        return self._post_read(sink.content, option)
-    async def _do_async_read(self, request: AR, option: RO = None) -> any:
-        raise NotImplementedError
