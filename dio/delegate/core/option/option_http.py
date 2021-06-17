@@ -1,7 +1,7 @@
 from abc import abstractmethod
 from typing import Dict, Generic, Optional, Type, TypeVar, Union
 
-from ...typing import OptionBase
+from .option_base import OptionBase
 
 
 class _Http_:

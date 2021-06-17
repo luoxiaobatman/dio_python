@@ -1,5 +1,8 @@
 from typing import Union
+from ..mixin.jsonable import Jsonable
 
 
-class Entity:
+class Entity(Jsonable):
     id: Union[int, str, None]
+    
+    

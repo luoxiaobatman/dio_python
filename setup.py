@@ -17,7 +17,8 @@ setup(
         'dio',
         'dio.mixin',
         'dio.share',
-        'dio.delegate', 'dio.delegate.abstract', 'dio.delegate.exception', 'dio.delegate.helper',
+        'dio.delegate',
+        'dio.delegate.abstract', 'dio.delegate.exception', 'dio.delegate.helper', 'dio.delegate.impl',
         'dio.delegate.core', 'dio.delegate.core.option', 'dio.delegate.core.source',
         'dio.schemable', 'dio.schemable.schemable_python'
     ]

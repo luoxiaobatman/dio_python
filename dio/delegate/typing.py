@@ -1,7 +1,7 @@
 from abc import abstractmethod
 from copy import deepcopy
 from typing import List, Optional, Tuple, TypeVar, Type, Generic
-# from .core.option_base import OptionBase
+from .core.option.option_base import OptionBase
 from .core.source.source_base import SourceBase
 from ..schemable.schemable_python.schemable_python import SchemablePython
 from ..share.entity import Entity
@@ -10,26 +10,11 @@ from ..schemable.typing import Schema
 
 IoDelegate = None
 
-
-class _Base_:
-    source: SourceBase
-    schema: Schema
-    def __init__(self, source, schema):
-        self.source = source
-        self.schema = schema
-
-
-class OptionBase:
-    _base_: _Base_
-    def __init__(self, source, schema=None):
-        assert source is not None
-        self._base_ = _Base_(source, schema)
-
-
 E = TypeVar('E', bound=Entity)
 RO = TypeVar('RO', bound=OptionBase)
 WO = TypeVar('WO', bound=OptionBase)
 O = TypeVar('O', bound=OptionBase)
+FIO = TypeVar('FIO', bound=IoDelegate)
 
 
 class IoDelegate(SchemablePython, Generic[E, RO, WO]):
@@ -73,11 +58,11 @@ class IoDelegate(SchemablePython, Generic[E, RO, WO]):
         return result
     
     @classmethod
-    def fork(clz, forked: List[Tuple[IoDelegate, RO, WO]]):
+    def fork(clz: Type[FIO], forked: List[Tuple[IoDelegate, RO, WO]]) -> Type[FIO]:
         if clz.forked:
             forked = clz.forked + forked
         
-        ChainedDelegate = type("Chained", (clz,), {})
+        ChainedDelegate: Type[FIO] = type("Chained", (clz,), {})
         ChainedDelegate.forked = forked
         return ChainedDelegate
     

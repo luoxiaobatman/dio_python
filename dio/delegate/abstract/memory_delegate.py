@@ -20,12 +20,16 @@ O = TypeVar('O', bound=OptionMemory)
 
 
 class MemoryDelegate(IoDelegate[E, RO, WO], Generic[E, RO, WO]):
+    """
+    管道
+    """
+    
     @abstractmethod
     async def _transform(self, option: RO = None) -> Optional[E]:
         raise NotImplementedError
     
     async def _read(self, option: RO = None) -> Optional[E]:
-        raise NotImplementedError
+        pass
     
     async def _write(self, option: WO = None) -> None:
         pass

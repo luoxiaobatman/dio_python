@@ -11,6 +11,7 @@ from .delegate.typing import IoDelegate
 from .delegate.core.option.option_base import OptionBase
 from .delegate.core.option.option_http import OptionHttp
 from .delegate.core.source.source_base import SourceBase
+from .delegate.impl.delegate_memory_noop import DelegateMemoryNoop
 
 from .share.entity import Entity
 from .registration import Registration
@@ -72,4 +73,5 @@ __all__ = [
     'OptionBase',
     'OptionHttp',
     'SourceBase',
+    'DelegateMemoryNoop',
 ]
