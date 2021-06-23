@@ -1,5 +1,6 @@
 from typing import Dict, Optional, Union
 import aiohttp
+import asyncio
 from .http_delegate import HttpRequest, HttpDelegate
 
 

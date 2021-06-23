@@ -1,4 +1,5 @@
 from abc import abstractmethod
+import asyncio
 from copy import deepcopy
 from typing import List, Optional, Tuple, TypeVar, Type, Generic
 from .core.option.option_base import OptionBase
@@ -42,7 +43,7 @@ class IoDelegate(SchemablePython, Generic[E, RO, WO]):
     async def _write(self, option: WO = None) -> None:
         raise NotImplementedError
     
-    async def flow(self, ro: RO = None, wo: WO = None) -> Optional[E]:
+    async def flow(self, ro: RO = None, wo: WO = None, *args, **kargs) -> Optional[E]:
         if self._entity_:
             await self._write(wo)
         else:
@@ -51,10 +52,8 @@ class IoDelegate(SchemablePython, Generic[E, RO, WO]):
         entity = await self._transform()
         result.append(entity)
         if self.__class__.forked:
-            rr = []
-            for Delegate, ro, wo in self.__class__.forked:
-                rr.append(await Delegate(deepcopy(entity)).flow(ro, wo))
-            result.append(rr)
+            fut = asyncio.gather(*[Delegate(deepcopy(entity)).flow(ro, wo, *args, **kargs) for (Delegate, ro, wo) in self.__class__.forked], loop=asyncio.get_event_loop())
+            result.append(await fut)
         return result
     
     @classmethod
@@ -70,3 +69,5 @@ class IoDelegate(SchemablePython, Generic[E, RO, WO]):
     def serial():
         # TODO
         raise NotImplementedError
+
+Flow = Tuple[Type[IoDelegate], Optional[RO], Optional[WO]]
